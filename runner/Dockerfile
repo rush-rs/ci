@@ -21,7 +21,7 @@ RUN apt-add-repository 'deb http://deb.debian.org/debian bullseye main'\
 # configure Rust
 ENV RUSTUP_HOME=/usr/local/rustup \
     CARGO_HOME=/usr/local/cargo \
-    PATH=/usr/local/cargo/bin:/root/wasmtime:$PATH
+    PATH=/usr/local/cargo/bin:/root/.wasmer/bin:$PATH
 
 # install Rust
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs > install.sh\
@@ -29,11 +29,8 @@ RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs > install.sh\
     && ./install.sh -y \
     && rm install.sh
 
-# download Wasmtime
-RUN curl -OL https://github.com/bytecodealliance/wasmtime/releases/download/dev/wasmtime-dev-x86_64-linux.tar.xz \
-    && tar xvf wasmtime-dev-x86_64-linux.tar.xz \
-    && mv wasmtime-dev-x86_64-linux/wasmtime /usr/bin/ \
-    && chmod +x /usr/bin/wasmtime
+# download Wasmer
+RUN curl https://get.wasmer.io -sSfL | sh
 
 # update the `crates.io` index since it takes a lot of time
 WORKDIR /root
@@ -46,4 +43,4 @@ COPY run.sh /root/
 RUN chmod +x /root/run.sh
 
 # run the testing script by default
-ENTRYPOINT ["/root/run.sh"]
+# ENTRYPOINT ["/root/run.sh"]
