@@ -1,0 +1,65 @@
+---
+resource_types:
+  - name: gotify-resource
+    type: registry-image
+    source:
+      tag: latest
+      repository: fgerling/gotify-resource
+
+resources:
+  - name: rush-repository
+    type: git
+    check_every: 5m
+    icon: github
+    source:
+      uri: https://github.com/rush-rs/rush.git
+
+  - name: gotify-pusher
+    type: gotify-resource
+    source:
+      url: https://push.example.com
+      appToken: your-token
+
+  - name: ci-runner-image
+    type: docker-image
+    check_every: 2m
+    icon: docker
+    source:
+      repository: docker-registry.box/rush-runner
+      tag: 0.1.0
+      insecure_registries: ['docker-registry.box']
+      username: concourse
+      password: your-password
+
+jobs:
+  # The integration test should be executed on every commit
+  - name: integration-tests
+    public: true
+    plan:
+      - get: rush-repository
+        trigger: true
+
+      - get: ci-runner-image
+        trigger: true
+
+      - task: run-integration-tests
+        image: ci-runner-image
+        config:
+          platform: linux
+          inputs:
+            - name: rush-repository
+              path: /opt/rush
+          run:
+            path: /bin/sh
+            args:
+              - -c
+              - |
+                rm -rf /root/rush
+                cp -r /opt/rush /root/rush
+                /root/run.sh
+        on_failure:
+          put: gotify-pusher
+          params:
+            title: Job Failed
+            message: Rush Integration Tests Failed
+            priority: 10
